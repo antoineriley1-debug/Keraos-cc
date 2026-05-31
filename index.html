@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keraos.cc - AI Chat</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; flex-direction: column; height: 100vh; }
+    #chat { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
+    .message { margin-bottom: 15px; display: flex; }
+    .message.user { justify-content: flex-end; }
+    .message-content { max-width: 70%; padding: 12px 16px; border-radius: 8px; word-wrap: break-word; }
+    .message.user .message-content { background: #3b82f6; color: #fff; }
+    .message.assistant .message-content { background: #1e293b; color: #e2e8f0; }
+    #input-area { padding: 20px; border-top: 1px solid #334155; display: flex; gap: 10px; }
+    textarea { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #1e293b; color: #e2e8f0; resize: none; height: 44px; font-family: inherit; font-size: 14px; }
+    button { padding: 10px 20px; border-radius: 6px; background: #3b82f6; color: #fff; border: none; font-weight: 600; cursor: pointer; }
+    button:disabled { background: #64748b; cursor: not-allowed; }
+    #header { padding: 20px; }
+    h1 { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
+    .subtitle { color: #94a3b8; }
+    .thinking { color: #94a3b8; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>Keraos.cc</h1>
+    <p class="subtitle">AI-Powered Chat • OpenClaw Agent</p>
+  </div>
+  <div id="chat"></div>
+  <div id="input-area">
+    <textarea id="input" placeholder="Type your message..." onkeypress="handleKeyPress(event)"></textarea>
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    let loading = false;
+    const chatDiv = document.getElementById('chat');
+    const inputEl = document.getElementById('input');
+
+    function handleKeyPress(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    async function sendMessage() {
+      const message = inputEl.value.trim();
+      if (!message || loading) return;
+
+      loading = true;
+      inputEl.disabled = true;
+
+      // Add user message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'message user';
+      userMsg.innerHTML = `<div class="message-content">${escapeHtml(message)}</div>`;
+      chatDiv.appendChild(userMsg);
+
+      inputEl.value = '';
+
+      try {
+        // Call OpenClaw directly (localhost:5000)
+        const response = await fetch('http://localhost:5000/api/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+          mode: 'cors',
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        // Add assistant message
+        const assistantMsg = document.createElement('div');
+        assistantMsg.className = 'message assistant';
+        assistantMsg.innerHTML = `<div class="message-content">${escapeHtml(data.response || data.message || 'No response')}</div>`;
+        chatDiv.appendChild(assistantMsg);
+      } catch (error) {
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'message assistant';
+        errorMsg.innerHTML = `<div class="message-content">❌ Connection error: ${error.message}<br><br>Make sure OpenClaw is running at <strong>localhost:5000</strong></div>`;
+        chatDiv.appendChild(errorMsg);
+      }
+
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+      loading = false;
+      inputEl.disabled = false;
+      inputEl.focus();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
