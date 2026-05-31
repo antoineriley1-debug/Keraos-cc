@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'Static HTML site'",
+  "outputDirectory": ".",
+  "public": true
+}
